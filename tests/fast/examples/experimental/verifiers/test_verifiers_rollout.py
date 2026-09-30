@@ -550,6 +550,7 @@ async def test_verifiers_episode_owns_group_reward_computation(deterministic: bo
 @pytest.mark.parametrize("min_tokens", [None, 3])
 def test_sampling_config_accepts_runtime_args_without_train_minimum_tokens(min_tokens: int | None) -> None:
     """Training defaults omit minimum tokens while evaluation preserves its explicit limit."""
+
     class SamplingConfig:
         @staticmethod
         def model_validate(data: dict[str, Any]) -> dict[str, Any]:
