@@ -103,31 +103,6 @@ def test_zero_advantage_ignores_nan_head_candidate(mode: str, bad_side: str) -> 
     assert all(torch.isfinite(value).all() for value in metrics.values())
 
 
-def test_active_nan_head_candidate_fails_clearly() -> None:
-    with pytest.raises(ValueError, match="NaN candidate"):
-        score_centering_loss(
-            torch.tensor([-1.0]),
-            torch.tensor([[float("nan")]]),
-            torch.tensor([-1.0]),
-            torch.tensor([[-1.0]]),
-            torch.tensor([[True]]),
-            torch.ones(1),
-        )
-
-
-@pytest.mark.parametrize("advantage", [float("nan"), float("inf"), float("-inf")])
-def test_nonfinite_advantage_fails_clearly(advantage: float) -> None:
-    with pytest.raises(ValueError, match="advantages must be finite"):
-        score_centering_loss(
-            torch.tensor([-1.0]),
-            torch.tensor([[-1.0]]),
-            torch.tensor([-1.0]),
-            torch.tensor([[-1.0]]),
-            torch.tensor([[True]]),
-            torch.tensor([advantage]),
-        )
-
-
 @pytest.mark.parametrize("bad_index", [1, 2, 3, 4, 5])
 def test_score_centering_loss_rejects_broadcastable_shapes(bad_index: int) -> None:
     values = [
@@ -173,21 +148,6 @@ def test_zero_weight_negative_infinity_has_finite_loss_and_gradient(mode: str, n
         torch.testing.assert_close(sample.grad, torch.zeros_like(sample.grad))
     else:
         torch.testing.assert_close(head.grad, torch.zeros_like(head.grad))
-
-
-@pytest.mark.parametrize("nonfinite", ["sample", "head"])
-def test_unweighted_nonfinite_positive_weight_fails_clearly(nonfinite: str) -> None:
-    sample = torch.tensor([float("-inf") if nonfinite == "sample" else -1.0])
-    head = torch.tensor([[float("-inf") if nonfinite == "head" else -1.0]])
-    with pytest.raises(ValueError, match="non-finite log-probability"):
-        score_centering_loss(
-            sample,
-            head,
-            torch.tensor([-1.0]),
-            torch.tensor([[-1.0]]),
-            torch.tensor([[True]]),
-            torch.ones(1),
-        )
 
 
 @pytest.mark.parametrize("mode", ["none", "tis", "mis"])

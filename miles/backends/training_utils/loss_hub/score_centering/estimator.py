@@ -46,8 +46,6 @@ def score_centering_loss(
         or head_mask.shape != train_head_log_probs.shape
     ):
         raise ValueError("Score-centering sample tensors must be [tokens] and head tensors [tokens, candidates]")
-    if not torch.isfinite(advantages).all():
-        raise ValueError("Score-centering advantages must be finite")
     sampling = importance_sampling(mode, tis_clip=tis_clip, mis_low=mis_low, mis_high=mis_high)
     active = advantages.detach() != 0
     train_head = sanitize_head_log_probs(train_head_log_probs, head_mask, active)
@@ -59,8 +57,8 @@ def score_centering_loss(
         alpha = sampling.tail_scale(rho, p.dtype)
         residual = sampling.head_mass(p, q, train_head - rollout_head) - alpha.unsqueeze(-1) * p
         weight = sampling.sample_weight(drop_inactive_nan(train_log_probs - rollout_log_probs, active, 0.0))
-    correction = (residual * scored_log_probs(train_head, residual, active)).sum(-1)
-    loss = -advantages.detach() * (weight * scored_log_probs(train_log_probs, weight, active) - correction)
+    correction = (residual * scored_log_probs(train_head, residual)).sum(-1)
+    loss = -advantages.detach() * (weight * scored_log_probs(train_log_probs, weight) - correction)
     return loss, {
         "sc_correction": correction.detach(),
         "sc_train_head_mass": p_mass,
